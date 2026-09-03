@@ -113,3 +113,50 @@ def test_login_valido_abre_la_conversacion(app: AppTest):
     assert not app.exception
     assert any(customer.full_name in success.value for success in app.sidebar.success)
     assert app.chat_input
+
+
+# ---------------------------------------------------------------------------
+# Punto de entrada de hosting (entregable 1 del PRD §2)
+# ---------------------------------------------------------------------------
+
+ENTRADA_HOSTING = Path(__file__).resolve().parents[1] / "streamlit_app.py"
+
+
+@pytest.fixture
+def app_hosting(app: AppTest, tmp_path: Path) -> AppTest:
+    """Misma configuración aislada, pero entrando por `streamlit_app.py`."""
+    return AppTest.from_file(str(ENTRADA_HOSTING), default_timeout=STARTUP_TIMEOUT_S)
+
+
+def test_el_punto_de_entrada_de_hosting_arranca(app_hosting: AppTest):
+    app_hosting.run()
+    assert not app_hosting.exception
+    assert len(app_hosting.sidebar.text_input) == 4
+
+
+def test_el_hosting_sigue_respondiendo_despues_del_login(app_hosting: AppTest):
+    """Regresión: Streamlit re-ejecuta el script en cada interacción.
+
+    Cuando este archivo se limitaba a `import insuragent.ui.app`, la interfaz
+    se renderizaba una sola vez —Python ejecuta un módulo únicamente en el
+    primer import— y quedaba congelada tras el login. El síntoma era una app que
+    arrancaba bien y dejaba de responder al primer clic, que es exactamente el
+    fallo que no se ve hasta tener a alguien usándola.
+    """
+    customer = _customer()
+    app_hosting.run()
+    for indice, valor in enumerate(
+        [customer.policy_number, customer.rfc, customer.curp, customer.phone_last3]
+    ):
+        app_hosting.sidebar.text_input[indice].set_value(valor)
+    app_hosting.sidebar.button[0].click().run()
+
+    assert not app_hosting.exception
+    assert any(customer.full_name in s.value for s in app_hosting.sidebar.success)
+    assert app_hosting.chat_input, "la conversación debe quedar disponible tras autenticarse"
+
+
+def test_la_interfaz_avisa_cuando_no_hay_modelo(app_hosting: AppTest):
+    """Una demo degradada que parece funcionar engaña a quien abre el enlace."""
+    app_hosting.run()
+    assert any("sin modelo" in w.value.lower() for w in app_hosting.warning)

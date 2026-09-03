@@ -269,4 +269,9 @@ def main() -> None:
     render_chat(session)
 
 
-main()
+# Streamlit ejecuta el script principal con `__name__ == "__main__"`, así que
+# esta guarda permite las dos formas de arranque sin duplicar la ejecución:
+#   streamlit run src/insuragent/ui/app.py   → entra por aquí
+#   streamlit_app.py (hosting)               → importa y llama a main() él mismo
+if __name__ == "__main__":
+    main()

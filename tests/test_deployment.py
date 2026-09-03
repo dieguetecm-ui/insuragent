@@ -105,3 +105,17 @@ def test_ambos_backends_recuperan_la_clausula_de_cristales(settings, backend):
         "se me rompió el parabrisas", top_k=3, coverage_types=(CoverageType.AMPLIA,)
     )
     assert "AMP-4.2" in [r.clause.clause_id for r in recuperadas]
+
+
+def test_el_backend_ligero_no_pisa_la_configuracion_local():
+    """`streamlit_app.py` sólo fuerza el backend léxico si falta la librería densa.
+
+    pydantic-settings lee el `.env` como archivo, no lo vuelca al entorno, así
+    que un `setdefault` incondicional ganaría siempre y silenciaría la elección
+    del desarrollador al correr este mismo archivo en local.
+    """
+    contenido = (RAIZ / "streamlit_app.py").read_text(encoding="utf-8")
+    assert 'find_spec("sentence_transformers") is None' in contenido
+    indice_condicion = contenido.index("find_spec")
+    indice_default = contenido.index('setdefault("INSURAGENT_EMBEDDING_BACKEND"')
+    assert indice_condicion < indice_default, "el default debe estar dentro de la condición"

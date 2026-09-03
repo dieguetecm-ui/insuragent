@@ -15,6 +15,7 @@ Autor: Diego Carrillo Mondragón
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import sys
 from pathlib import Path
@@ -34,9 +35,15 @@ except Exception:  # noqa: BLE001 — sin secretos configurados, se sigue igual
     pass
 
 # En un hosting gratuito no cabe PyTorch (2.1 GB de RSS frente a 214 MB), así
-# que el backend por omisión es el léxico con el diccionario del dominio, medido
-# en 15/15 sobre el set dorado — la misma precisión que el modelo denso.
-os.environ.setdefault("INSURAGENT_EMBEDDING_BACKEND", "hash")
+# que allí el backend es el léxico con el diccionario del dominio, medido en
+# 15/15 sobre el set dorado — la misma precisión que el modelo denso.
+#
+# La condición es la ausencia de la librería, no el entorno: si alguien corre
+# este mismo archivo en local con `sentence-transformers` instalado, manda lo
+# que diga su `.env`. Un `setdefault` incondicional lo ignoraría, porque
+# pydantic-settings lee el `.env` como archivo y no lo vuelca al entorno.
+if importlib.util.find_spec("sentence_transformers") is None:
+    os.environ.setdefault("INSURAGENT_EMBEDDING_BACKEND", "hash")
 
 from insuragent.bootstrap import ensure_ready  # noqa: E402
 from insuragent.observability import configure_logging  # noqa: E402
@@ -51,6 +58,10 @@ def _preparar() -> dict[str, str]:
 
 _preparar()
 
-# Importar el módulo ejecuta la interfaz: Streamlit corre el script completo en
-# cada interacción, así que la UI vive a nivel de módulo por diseño.
-import insuragent.ui.app  # noqa: E402, F401
+from insuragent.ui.app import main  # noqa: E402
+
+# Se invoca la función explícitamente, no se confía en el efecto secundario del
+# import: Python sólo ejecuta un módulo la primera vez que se importa, mientras
+# que Streamlit vuelve a correr este script en cada interacción del usuario. Con
+# `import` a secas, la interfaz se quedaba congelada tras el primer render.
+main()
