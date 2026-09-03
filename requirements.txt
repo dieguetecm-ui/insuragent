@@ -30,7 +30,7 @@ langchain-core==1.6.1
 # --- RAG (PRD §4.2) ---------------------------------------------------------
 # faiss-cpu es la variante portable: con 19 cláusulas la GPU no aporta nada
 # medible. En una máquina con CUDA puede sustituirse por faiss-gpu-cu12.
-faiss-cpu==1.14.1
+faiss-cpu==1.15.0
 numpy==2.4.6
 
 # --- Interfaz (PRD §4.1) ----------------------------------------------------

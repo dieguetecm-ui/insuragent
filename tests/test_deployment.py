@@ -119,3 +119,83 @@ def test_el_backend_ligero_no_pisa_la_configuracion_local():
     indice_condicion = contenido.index("find_spec")
     indice_default = contenido.index('setdefault("INSURAGENT_EMBEDDING_BACKEND"')
     assert indice_condicion < indice_default, "el default debe estar dentro de la condición"
+
+
+# ---------------------------------------------------------------------------
+# Verificación de los pines contra PyPI
+# ---------------------------------------------------------------------------
+
+MANIFIESTOS = (
+    "requirements.txt",
+    "requirements-embeddings.txt",
+    "requirements-report.txt",
+    "requirements-dev.txt",
+)
+
+
+def _pines(manifiesto: Path) -> list[tuple[str, str]]:
+    """Pares (paquete, versión) de un requirements."""
+    import re
+
+    pares = []
+    for linea in manifiesto.read_text(encoding="utf-8").splitlines():
+        if m := re.match(r"\s*([A-Za-z0-9_.\-]+)==([^\s;#]+)", linea):
+            pares.append((m.group(1), m.group(2)))
+    return pares
+
+
+@pytest.mark.parametrize("nombre_manifiesto", MANIFIESTOS)
+def test_las_versiones_fijadas_existen_en_pypi(nombre_manifiesto: str):
+    """Un pin inexistente rompe el despliegue, no la máquina de desarrollo.
+
+    Ocurrió: `faiss-cpu` se fijó en `1.14.1` por analogía con
+    `faiss-gpu-cu12==1.14.1.post1`, que es otro paquete con su propia
+    numeración. En local nada falló —faiss-gpu ya estaba instalado— y el error
+    apareció al desplegar, con un mensaje que no decía qué paquete era.
+    """
+    import json
+    import urllib.error
+    import urllib.request
+
+    inexistentes = []
+    for paquete, version in _pines(RAIZ / nombre_manifiesto):
+        try:
+            with urllib.request.urlopen(
+                f"https://pypi.org/pypi/{paquete}/json", timeout=15
+            ) as respuesta:
+                publicadas = json.load(respuesta)["releases"]
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            pytest.skip(f"sin acceso a PyPI: {exc}")
+        if version not in publicadas:
+            inexistentes.append(f"{paquete}=={version}")
+
+    assert not inexistentes, (
+        f"{nombre_manifiesto} fija versiones que no existen en PyPI: {', '.join(inexistentes)}"
+    )
+
+
+def test_faiss_cpu_tiene_rueda_para_linux():
+    """La rueda es abi3 (`cp310-abi3-manylinux`), válida para 3.10+.
+
+    Comprobarlo por el nombre exacto `cp312` daría un falso negativo y llevaría
+    a descartar una versión que sí sirve.
+    """
+    import json
+    import urllib.error
+    import urllib.request
+
+    version = dict(_pines(RAIZ / "requirements.txt"))["faiss-cpu"]
+    try:
+        with urllib.request.urlopen(
+            "https://pypi.org/pypi/faiss-cpu/json", timeout=15
+        ) as respuesta:
+            archivos = json.load(respuesta)["releases"][version]
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        pytest.skip(f"sin acceso a PyPI: {exc}")
+
+    ruedas_linux = [
+        a["filename"]
+        for a in archivos
+        if "manylinux" in a["filename"] and "x86_64" in a["filename"]
+    ]
+    assert ruedas_linux, f"faiss-cpu {version} no publica rueda manylinux x86_64"
