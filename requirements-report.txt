@@ -1,0 +1,7 @@
+# Generación del reporte técnico en PDF (`make report`).
+# Se mantiene fuera de requirements.txt porque la aplicación desplegada no
+# necesita renderizar PDFs y weasyprint arrastra librerías de sistema (pango,
+# cairo) que un hosting gratuito no siempre trae.
+-r requirements.txt
+
+weasyprint==69.0

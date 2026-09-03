@@ -1,0 +1,12 @@
+# Copiar a terraform.tfvars. NO versionar el archivo resultante.
+# `anthropic_api_key` se pasa por variable de entorno, nunca por archivo:
+#   export TF_VAR_anthropic_api_key="sk-ant-..."
+
+project_id      = "mi-proyecto-gcp"
+region          = "northamerica-south1"
+environment     = "poc"
+container_image = "northamerica-south1-docker.pkg.dev/mi-proyecto-gcp/insuragent-poc/app:v0.1.0"
+
+db_tier             = "db-f1-micro"
+max_instances       = 2
+allow_public_access = false

@@ -1,0 +1,37 @@
+# ---------------------------------------------------------------------------
+# InsurAgent — dependencias de la APLICACIÓN.
+#
+# Este archivo es el que lee un hosting gestionado (Streamlit Community Cloud,
+# Hugging Face Spaces) al desplegar, así que se mantiene deliberadamente ligero:
+# sin PyTorch ni modelos densos. La recuperación usa el embedder `hash` con el
+# léxico del dominio, medido en 15/15 sobre el set dorado — la misma precisión
+# que el modelo denso, con 214 MB de RSS en vez de 2 158 MB.
+#
+# Para la ruta con embeddings densos (local, con GPU):
+#     pip install -r requirements-embeddings.txt
+# Para generar el reporte PDF:
+#     pip install -r requirements-report.txt
+# Para desarrollar y correr las pruebas:
+#     pip install -r requirements-dev.txt
+# ---------------------------------------------------------------------------
+
+# --- Contratos de datos y configuración (PRD §4.3) -------------------------
+pydantic==2.13.5
+pydantic-settings==2.15.0
+python-dotenv==1.2.3
+
+# --- Proveedor LLM principal (PRD §4.2) ------------------------------------
+anthropic==1.3.0
+
+# --- Orquestación agéntica (PRD §4.1) --------------------------------------
+langgraph==1.2.11
+langchain-core==1.6.1
+
+# --- RAG (PRD §4.2) ---------------------------------------------------------
+# faiss-cpu es la variante portable: con 19 cláusulas la GPU no aporta nada
+# medible. En una máquina con CUDA puede sustituirse por faiss-gpu-cu12.
+faiss-cpu==1.14.1
+numpy==2.4.6
+
+# --- Interfaz (PRD §4.1) ----------------------------------------------------
+streamlit==1.63.0

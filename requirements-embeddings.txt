@@ -1,0 +1,8 @@
+# Ruta de embeddings densos: mayor generalización semántica a cambio de ~2 GB
+# de RSS y varios segundos de arranque. No cabe en un hosting gratuito; se usa
+# en local, idealmente con GPU.
+#
+# Actívala con INSURAGENT_EMBEDDING_BACKEND=sentence-transformers
+-r requirements.txt
+
+sentence-transformers==5.5.1

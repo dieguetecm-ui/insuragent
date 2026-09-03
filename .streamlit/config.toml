@@ -1,0 +1,15 @@
+# Configuración de la interfaz. Este archivo SÍ se versiona; los secretos van en
+# `.streamlit/secrets.toml`, que está excluido del control de versiones.
+
+[theme]
+base = "light"
+primaryColor = "#1f5f8b"
+
+[server]
+headless = true
+# La evidencia de siniestros son fotografías; 10 MB es el tope que ya valida el
+# agente FNOL antes de escribir en disco.
+maxUploadSize = 10
+
+[browser]
+gatherUsageStats = false

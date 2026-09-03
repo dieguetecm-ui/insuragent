@@ -1,0 +1,128 @@
+# ===========================================================================
+# InsurAgent — .gitignore
+#
+# Regla de oro: en este repositorio NO entra ningún secreto ni ningún dato
+# personal, ni siquiera sintético-con-forma-de-real. Lo que se versiona es
+# código, configuración de ejemplo e infraestructura declarativa.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# SECRETOS — nunca, bajo ninguna circunstancia
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.env
+secrets.toml
+.streamlit/secrets.toml
+
+# Credenciales de proveedores de nube y llaves criptográficas
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+credentials.json
+client_secret*.json
+service-account*.json
+gcp-*.json
+application_default_credentials.json
+.gcloud/
+.aws/
+.config/gcloud/
+
+# ---------------------------------------------------------------------------
+# TERRAFORM — el estado contiene los secretos en texto plano
+# ---------------------------------------------------------------------------
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+
+# ---------------------------------------------------------------------------
+# DATOS PERSONALES Y ARTEFACTOS GENERADOS
+#
+# `data/uploads/` contiene evidencia fotográfica de siniestros; la base y las
+# trazas contienen RFC, CURP y conversaciones. Aunque en la PoC todo es
+# sintético, el hábito correcto es que estas rutas jamás se versionen: el día
+# que el proyecto toque datos reales, el .gitignore ya está bien.
+# ---------------------------------------------------------------------------
+data/uploads/
+data/index/
+data/*.db
+data/*.sqlite3
+data/*.jsonl
+data/evaluation_report.json
+data/transcripts.json
+
+# El corpus sintético (`data/raw/`) SÍ se versiona: es documentación revisable
+# y se regenera con `make seed`.
+
+# ---------------------------------------------------------------------------
+# PYTHON
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# Pruebas y calidad
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ---------------------------------------------------------------------------
+# DOCUMENTACIÓN GENERADA
+#
+# `docs/report.pdf` SÍ se versiona: es el entregable 2 del PRD §2 y debe poder
+# leerse desde GitHub sin clonar ni ejecutar nada. No contiene secretos —sólo
+# métricas y datos sintéticos— y se regenera con `make report`.
+# El HTML intermedio (`--html`) es sólo para depurar estilos y no se versiona.
+# ---------------------------------------------------------------------------
+docs/report.html
+docs/*_files/
+
+# ---------------------------------------------------------------------------
+# MODELOS Y CACHÉS PESADOS
+# ---------------------------------------------------------------------------
+.cache/
+huggingface/
+*.faiss
+*.bin
+*.safetensors
+
+# ---------------------------------------------------------------------------
+# ENTORNO DE TRABAJO
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.log
+nohup.out

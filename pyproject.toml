@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "insuragent"
+version = "0.1.0"
+description = "PoC de asistente agéntico para el ramo de seguros de automóviles"
+requires-python = ">=3.12"
+authors = [{ name = "Diego Carrillo Mondragón", email = "dieguetecm@gmail.com" }]
+license = { text = "Proprietary" }
+dependencies = [
+  "pydantic>=2.7",
+  "pydantic-settings>=2.2",
+  "python-dotenv>=1.0",
+  "anthropic>=0.40",
+  "langgraph>=0.2",
+  "langchain-core>=0.3",
+  "streamlit>=1.36",
+  "faiss-cpu>=1.8",
+  "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+# Embeddings densos: mejor generalización, ~2 GB de RSS. No cabe en hosting gratuito.
+embeddings = ["sentence-transformers>=3.0"]
+# Generación del reporte en PDF.
+report = ["weasyprint>=62"]
+
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "ruff>=0.5"]
+
+[project.scripts]
+insuragent-seed = "insuragent.cli:seed"
+insuragent-index = "insuragent.cli:index"
+insuragent-eval = "insuragent.cli:evaluate"
+insuragent-report = "insuragent.cli:report"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "N"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+  "llm: pruebas que requieren un proveedor LLM real (se omiten sin API key)",
+]
