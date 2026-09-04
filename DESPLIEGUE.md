@@ -5,6 +5,25 @@
 Objetivo: que alguien abra un enlace, ingrese con las credenciales del reporte
 PDF y use la aplicación **sin instalar nada**.
 
+> **Despliegue activo:** https://dieguetecm-ui-insuragent-streamlit-app-f0ocjz.streamlit.app
+
+## Hacer la aplicación accesible sin cuenta
+
+Streamlit Community Cloud crea las aplicaciones con acceso restringido: quien
+abra el enlace recibe un `303` hacia la pantalla de acceso de Streamlit. Para
+que cualquiera pueda usarla:
+
+1. Abrir la app en [share.streamlit.io](https://share.streamlit.io).
+2. **⋮ → Settings → Sharing**.
+3. En *Who can view this app*, elegir **«This app is public and searchable»**
+   (o *anyone with the link*) y guardar.
+
+Comprobación desde fuera —debe responder `200`, no `303`:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://dieguetecm-ui-insuragent-streamlit-app-f0ocjz.streamlit.app/
+```
+
 El proyecto ya está preparado para eso. Lo que sigue son los pasos que sólo
 puedes dar tú, porque requieren tus cuentas.
 

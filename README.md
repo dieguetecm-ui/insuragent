@@ -2,6 +2,11 @@
 
 **Autor:** Diego Carrillo Mondragón
 
+**▶ Aplicación en línea:** https://dieguetecm-ui-insuragent-streamlit-app-f0ocjz.streamlit.app
+
+Ingresa con las credenciales sintéticas de la tabla en
+[«Credenciales de prueba»](#credenciales-de-prueba) — no requiere instalar nada.
+
 Asistente agéntico conversacional para el sector asegurador. Interpreta las
 condiciones generales de una póliza de auto, cotiza deducibles, levanta el
 reporte de un siniestro (FNOL) y localiza talleres en convenio — con datos
@@ -236,6 +241,20 @@ contexto y, ante un siniestro recurrente, lo menciona con su folio:
 Se resumen tres expedientes, no todos: el historial completo crecería sin límite
 y desplazaría del contexto a las cláusulas recuperadas, que son lo que el agente
 necesita para responder.
+
+## Credenciales de prueba
+
+Para la [aplicación en línea](https://dieguetecm-ui-insuragent-streamlit-app-f0ocjz.streamlit.app). Los cuatro factores son obligatorios.
+
+| Asegurado | Póliza | RFC | CURP | Cel. | Paquete | Historial |
+|---|---|---|---|---|---|---|
+| Elena Jiménez Lozano | `AUT-2026-100000` | `XXXJ860330FYB` | `XXXX860330MNEYSTB7` | `769` | amplia | sí |
+| Carmen Guerrero Jiménez | `AUT-2026-100137` | `XXXG7704151VA` | `XXXX770415MNEJHCB3` | `726` | basica | sí |
+| Fernando Ibarra Lozano | `AUT-2026-100274` | `XXXI9209035QA` | `XXXX920903HNEJXBB6` | `423` | rc | sí |
+
+Prueba con Elena: *«Otra vez se me estrelló el parabrisas, ¿cuánto pago de
+deducible?»* — debe citar la cláusula, el deducible calculado en Python y el
+folio de su siniestro anterior.
 
 ## Seguridad y secretos
 
