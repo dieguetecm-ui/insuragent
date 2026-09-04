@@ -11,7 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -33,7 +33,15 @@ class Settings(BaseSettings):
 
     # --- LLM ---------------------------------------------------------------
     llm_provider: LLMProviderName = "anthropic"
-    anthropic_api_key: str = Field(default="", validation_alias="ANTHROPIC_API_KEY")
+    anthropic_api_key: SecretStr = Field(
+        default=SecretStr(""),
+        validation_alias="ANTHROPIC_API_KEY",
+        description=(
+            "SecretStr, no str: pydantic la enmascara al representar el objeto. Sin eso, "
+            "cualquier traza de error, log de depuración o fallo de prueba que imprima la "
+            "configuración publica la llave en claro."
+        ),
+    )
     anthropic_workspace_id: str = Field(
         default="",
         validation_alias="ANTHROPIC_WORKSPACE_ID",

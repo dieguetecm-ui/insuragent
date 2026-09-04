@@ -34,6 +34,9 @@ fmt: ## Aplica formato
 	$(PY) -m ruff format src tests scripts
 	$(PY) -m ruff check --fix src tests scripts
 
+audit: ## Sondas adversariales: fuga de datos, prompt e identidad
+	$(PY) scripts/audit.py
+
 report: ## Genera el reporte técnico en PDF (docs/report.pdf)
 	$(PY) scripts/build_report.py
 
@@ -42,4 +45,4 @@ bootstrap: seed index ## Prepara todos los artefactos locales
 clean: ## Borra artefactos generados
 	rm -rf data/index data/insuragent.db data/traces.jsonl .pytest_cache .ruff_cache
 
-.PHONY: help install seed index eval app test lint fmt report bootstrap clean
+.PHONY: help install seed index eval audit app test lint fmt report bootstrap clean

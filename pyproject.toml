@@ -34,6 +34,7 @@ insuragent-seed = "insuragent.cli:seed"
 insuragent-index = "insuragent.cli:index"
 insuragent-eval = "insuragent.cli:evaluate"
 insuragent-report = "insuragent.cli:report"
+insuragent-audit = "insuragent.cli:audit"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -101,6 +101,7 @@ def test_ningun_archivo_versionable_contiene_una_llave():
     """Escaneo del árbol real: ningún archivo que se versionaría lleva un secreto."""
     import re
 
+    marcador_permitido = "pragma: allowlist secret"
     patrones = re.compile(
         r"sk-ant-[A-Za-z0-9_-]{20,}"  # Anthropic
         r"|AIza[0-9A-Za-z_-]{30,}"  # Google
@@ -119,7 +120,15 @@ def test_ningun_archivo_versionable_contiene_una_llave():
             contenido = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError):
             continue
-        if patrones.search(contenido):
+        # Marcador explícito para credenciales ficticias de prueba. Se exige por
+        # línea —no por archivo— para que un secreto real colado en un archivo
+        # con fixtures siga saltando la alarma.
+        sospechosas = [
+            linea
+            for linea in contenido.splitlines()
+            if patrones.search(linea) and marcador_permitido not in linea
+        ]
+        if sospechosas:
             hallazgos.append(str(path.relative_to(PROJECT_ROOT)))
 
     assert not hallazgos, f"Posibles secretos en: {', '.join(hallazgos)}"

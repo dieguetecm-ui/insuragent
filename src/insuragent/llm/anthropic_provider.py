@@ -36,8 +36,8 @@ class AnthropicProvider(LLMProvider):
         # Sin api_key explícito el SDK resuelve ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN
         # o un perfil de `ant auth login`; sólo lo inyectamos si vino del `.env`.
         kwargs: dict[str, Any] = {}
-        if self._settings.anthropic_api_key:
-            kwargs["api_key"] = self._settings.anthropic_api_key
+        if llave := self._settings.anthropic_api_key.get_secret_value():
+            kwargs["api_key"] = llave
         # Las API keys ligadas a una identidad exigen declarar el workspace en
         # el que actúa la petición; sin la cabecera la API responde 400.
         if self._settings.anthropic_workspace_id:

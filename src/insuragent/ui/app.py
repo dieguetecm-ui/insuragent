@@ -22,9 +22,12 @@ if str(_SRC) not in sys.path:
 
 import streamlit as st  # noqa: E402
 
-from insuragent.config import get_settings  # noqa: E402
+from insuragent.config import Settings, get_settings  # noqa: E402
+from insuragent.db.repository import Repository  # noqa: E402
 from insuragent.graph.state import Stage  # noqa: E402
+from insuragent.llm import LLMProvider, get_provider  # noqa: E402
 from insuragent.observability import configure_logging  # noqa: E402
+from insuragent.rag.index import ClauseIndex  # noqa: E402
 from insuragent.schemas.auth import LoginRequest  # noqa: E402
 from insuragent.session import InsurAgentSession  # noqa: E402
 
@@ -36,11 +39,38 @@ WELCOME = (
 )
 
 
-@st.cache_resource(show_spinner="Inicializando agentes, índice FAISS y base de datos…")
-def bootstrap() -> InsurAgentSession:
-    """Construye la sesión una sola vez por proceso de Streamlit."""
+@st.cache_resource(show_spinner="Inicializando índice FAISS y base de datos…")
+def recursos_compartidos() -> tuple[LLMProvider, ClauseIndex, Repository, Settings]:
+    """Recursos caros e **inmutables**, compartidos por todos los visitantes.
+
+    `st.cache_resource` guarda un único objeto para todo el proceso, así que
+    aquí sólo puede vivir lo que no cambia con el uso: el índice vectorial (de
+    sólo lectura tras construirse), el cliente del proveedor (sin estado entre
+    llamadas) y el repositorio (que abre una conexión nueva por operación).
+    """
     configure_logging()
-    return InsurAgentSession.create(get_settings())
+    settings = get_settings()
+    settings.ensure_dirs()
+    repository = Repository(settings.db_path)
+    repository.initialize()
+    return get_provider(settings), ClauseIndex.load(settings=settings), repository, settings
+
+
+def sesion_del_visitante() -> InsurAgentSession:
+    """Sesión conversacional **propia de cada visitante**.
+
+    Vive en `st.session_state`, que Streamlit aísla por pestaña del navegador.
+    Nunca en `st.cache_resource`: ese caché es global al proceso y la sesión
+    guarda estado del asegurado —identidad, historial de siniestros, borrador
+    del reporte—, de modo que compartirla haría que quien abriera la aplicación
+    heredara la sesión iniciada por otra persona.
+    """
+    if "insuragent_session" not in st.session_state:
+        provider, index, repository, settings = recursos_compartidos()
+        st.session_state.insuragent_session = InsurAgentSession(
+            provider=provider, index=index, repository=repository, settings=settings
+        )
+    return st.session_state.insuragent_session
 
 
 def render_provider_banner(session: InsurAgentSession) -> None:
@@ -250,7 +280,7 @@ def main() -> None:
         "No constituye asesoría ni oferta de seguro."
     )
 
-    session = bootstrap()
+    session = sesion_del_visitante()
     st.session_state.setdefault("messages", [])
     st.session_state.setdefault("traces", [])
     render_provider_banner(session)

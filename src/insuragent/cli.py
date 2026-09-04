@@ -135,6 +135,35 @@ def evaluate(argv: list[str] | None = None) -> int:
     return 0
 
 
+def audit(argv: list[str] | None = None) -> int:
+    """Lanza las sondas adversariales contra la aplicación (auditoría de fugas)."""
+    parser = argparse.ArgumentParser(description="Audita la app con sondas adversariales.")
+    parser.add_argument("--json", dest="json_path", default=None, help="Ruta del reporte JSON")
+    args = parser.parse_args(argv)
+
+    configure_logging()
+    from insuragent.evaluation.redteam import ejecutar
+
+    settings = get_settings()
+    try:
+        resultados = ejecutar(settings, Path(args.json_path) if args.json_path else None)
+    except RuntimeError as exc:
+        print(f"\n✗ No se pudo auditar.\n  {exc}\n")
+        return 1
+
+    seguras = sum(r.seguro for r in resultados)
+    print("=" * 62)
+    print(f"  Auditoría adversarial: {seguras}/{len(resultados)} sondas contenidas")
+    print("=" * 62)
+    for r in resultados:
+        print(f"  [{'OK  ' if r.seguro else 'FUGA'}] {r.sonda_id} · {r.categoria}")
+        for hallazgo in r.hallazgos:
+            print(f"          → {hallazgo}")
+    print("=" * 62)
+    # Una fuga es un fallo: el comando debe poder usarse como puerta en CI.
+    return 0 if seguras == len(resultados) else 1
+
+
 def report(argv: list[str] | None = None) -> int:
     """Genera el reporte técnico en PDF (entregable 2 del PRD §2)."""
     parser = argparse.ArgumentParser(description="Genera el reporte técnico en PDF.")

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 import uuid
 from collections.abc import Iterator
@@ -23,6 +24,37 @@ from typing import Any
 from insuragent.config import get_settings
 
 _LOGGER = logging.getLogger("insuragent")
+
+# Identificadores que nunca deben quedar en un archivo de log en claro. Las
+# trazas se comparten al depurar y se copian a tickets de soporte; un RFC ahí es
+# una fuga aunque el archivo jamás se versione.
+_PATRONES_SENSIBLES: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\b[A-ZÑ&]{4}\d{6}[A-Z0-9]{3}\b"), "[RFC]"),
+    (re.compile(r"\b[A-Z]{4}\d{6}[HM][A-Z]{2}[A-Z]{3}[A-Z0-9]\d\b"), "[CURP]"),
+    (re.compile(r"sk-ant-[A-Za-z0-9_-]{10,}"), "[LLAVE]"),
+    (re.compile(r"\b\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4}\b"), "[TARJETA]"),
+    (re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.]{2,}\b"), "[CORREO]"),
+    (re.compile(r"\b\d{10}\b"), "[TELEFONO]"),
+)
+
+LONGITUD_MAXIMA_TEXTO = 300
+
+
+def redactar(texto: str) -> str:
+    """Enmascara identificadores regulados en un texto libre antes de registrarlo.
+
+    Se aplica al mensaje del asegurado: es el único campo de la traza donde
+    puede aparecer cualquier cosa, porque lo escribe una persona. El resto de
+    campos son valores que produce el propio sistema.
+    """
+    saneado = texto
+    for patron, sustituto in _PATRONES_SENSIBLES:
+        saneado = patron.sub(sustituto, saneado)
+    if len(saneado) > LONGITUD_MAXIMA_TEXTO:
+        saneado = saneado[:LONGITUD_MAXIMA_TEXTO] + "…[truncado]"
+    return saneado
+
+
 _CURRENT_RUN: ContextVar[str | None] = ContextVar("insuragent_run_id", default=None)
 
 
@@ -59,6 +91,10 @@ class TraceWriter:
         self._path = path
         self._path.parent.mkdir(parents=True, exist_ok=True)
 
+    @property
+    def path(self) -> Path:
+        return self._path
+
     def write(self, event: TraceEvent) -> None:
         try:
             with self._path.open("a", encoding="utf-8") as handle:
@@ -77,9 +113,16 @@ _writer: TraceWriter | None = None
 
 
 def get_writer() -> TraceWriter:
+    """Escritor de trazas para la ruta configurada actualmente.
+
+    Se cachea, pero se recrea si la ruta cambia. Un global fijado en el primer
+    uso seguiría escribiendo en el archivo de la configuración anterior, y las
+    trazas de una sesión acabarían en el archivo de otra.
+    """
     global _writer
-    if _writer is None:
-        _writer = TraceWriter(get_settings().trace_file)
+    destino = get_settings().trace_file
+    if _writer is None or _writer.path != destino:
+        _writer = TraceWriter(destino)
     return _writer
 
 

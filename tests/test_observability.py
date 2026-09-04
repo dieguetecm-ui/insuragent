@@ -10,6 +10,14 @@ from insuragent.observability import TraceWriter, new_run_id, trace_node
 
 @pytest.fixture(autouse=True)
 def _isolated_writer(settings, monkeypatch):
+    """Aísla el archivo de trazas.
+
+    No basta con sustituir el global: `get_writer` compara la ruta cacheada con
+    la de la configuración activa y recrea el escritor si difieren —para que un
+    cambio de configuración no siga escribiendo en el archivo anterior—, así que
+    la configuración también tiene que apuntar al directorio temporal.
+    """
+    monkeypatch.setattr(observability, "get_settings", lambda: settings)
     monkeypatch.setattr(observability, "_writer", TraceWriter(settings.trace_file))
     return settings.trace_file
 

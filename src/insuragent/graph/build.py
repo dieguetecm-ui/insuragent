@@ -32,7 +32,7 @@ from insuragent.agents.orchestrator import Orchestrator
 from insuragent.agents.policy_agent import PolicyAgent
 from insuragent.graph.state import ConversationState, Stage
 from insuragent.llm import Usage
-from insuragent.observability import trace_node
+from insuragent.observability import redactar, trace_node
 from insuragent.schemas.fnol import IncidentDraft
 from insuragent.schemas.routing import Route
 
@@ -124,7 +124,9 @@ def build_graph(
         stage = state.get("stage", Stage.IDLE.value)
         user_input = state.get("user_input", "")
 
-        with trace_node("orchestrator", stage=stage, user_input=user_input) as span:
+        # El mensaje se registra saneado: es texto que escribe una persona y
+        # puede contener identificadores regulados o datos de contacto.
+        with trace_node("orchestrator", stage=stage, user_input=redactar(user_input)) as span:
             # Continuidad del flujo FNOL: no se reclasifica a media recolección.
             if stage in {Stage.COLLECTING.value, Stage.AWAITING_EVIDENCE.value}:
                 span |= {"route": Route.FNOL.value, "decided_by": "state_machine"}
