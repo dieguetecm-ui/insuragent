@@ -379,3 +379,15 @@ def test_restringir_no_revienta_en_rutas_inexistentes():
     from insuragent.fs import restringir
 
     restringir(Path("/ruta/que/no/existe/archivo.db"))
+
+
+def test_el_directorio_de_evidencia_nace_restringido(tmp_path):
+    """Guarda fotografías de vehículos de personas concretas."""
+    import stat
+
+    from insuragent.config import Settings
+
+    settings = Settings(data_dir=tmp_path, uploads_dir=tmp_path / "uploads")
+    settings.ensure_dirs()
+    modo = stat.S_IMODE((tmp_path / "uploads").stat().st_mode)
+    assert modo & (stat.S_IRGRP | stat.S_IROTH | stat.S_IXGRP | stat.S_IXOTH) == 0

@@ -104,9 +104,17 @@ class Settings(BaseSettings):
         return value if value.is_absolute() else (PROJECT_ROOT / value)
 
     def ensure_dirs(self) -> None:
-        """Crea los directorios de trabajo si aún no existen."""
+        """Crea los directorios de trabajo si aún no existen.
+
+        El de evidencia se restringe al propietario: guarda fotografías de los
+        vehículos de personas concretas. Los demás sólo contienen el corpus
+        sintético y el índice, que no son datos personales.
+        """
+        from insuragent.fs import restringir
+
         for directory in (self.data_dir, self.corpus_dir, self.index_dir, self.uploads_dir):
             directory.mkdir(parents=True, exist_ok=True)
+        restringir(self.uploads_dir)
 
 
 @lru_cache(maxsize=1)
