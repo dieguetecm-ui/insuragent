@@ -32,6 +32,7 @@ class ReportData:
     evaluacion: dict[str, Any] | None
     generado: date
     transcripciones: dict[str, Any] | None = None
+    auditoria: dict[str, Any] | None = None
 
     @property
     def hay_metricas(self) -> bool:
@@ -92,7 +93,22 @@ def load_report_data(settings: Settings | None = None) -> ReportData:
             ruta_transcripciones,
         )
 
-    return ReportData(evaluacion=evaluacion, generado=date.today(), transcripciones=transcripciones)
+    auditoria = None
+    ruta_auditoria = settings.data_dir / "redteam_report.json"
+    if ruta_auditoria.exists():
+        auditoria = json.loads(ruta_auditoria.read_text(encoding="utf-8"))
+    else:
+        _LOGGER.info(
+            "No hay reporte de auditoría en %s; el capítulo de seguridad saldrá sin sondas.",
+            ruta_auditoria,
+        )
+
+    return ReportData(
+        evaluacion=evaluacion,
+        generado=date.today(),
+        transcripciones=transcripciones,
+        auditoria=auditoria,
+    )
 
 
 def render_html(settings: Settings | None = None, data: ReportData | None = None) -> str:

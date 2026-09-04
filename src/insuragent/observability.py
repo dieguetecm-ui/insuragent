@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from insuragent.config import get_settings
+from insuragent.fs import restringir
 
 _LOGGER = logging.getLogger("insuragent")
 
@@ -90,6 +91,8 @@ class TraceWriter:
     def __init__(self, path: Path) -> None:
         self._path = path
         self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._path.touch(exist_ok=True)
+        restringir(self._path)
 
     @property
     def path(self) -> Path:

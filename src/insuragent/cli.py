@@ -196,6 +196,30 @@ def report(argv: list[str] | None = None) -> int:
     report_json = settings.data_dir / "evaluation_report.json"
     if not report_json.exists():
         print("  ⚠ Sin métricas: ejecuta `make eval` y vuelve a generar el reporte.")
+        return 0
+
+    # Guardarraíl: una corrida de comparación con el stub sobrescribe el
+    # artefacto de métricas, y el PDF sale con cifras que no son del modelo sin
+    # que nadie lo note hasta leerlo. El aviso va aquí, en el momento de generar.
+    import json
+
+    medicion = json.loads(report_json.read_text(encoding="utf-8"))
+    if medicion.get("provider") == "stub":
+        print()
+        print("  ⚠ ATENCIÓN: las métricas de este PDF vienen del proveedor determinista")
+        print("    (`stub`), no del modelo. Son una línea base, no una medición.")
+        print("    Para cifras reales: INSURAGENT_LLM_PROVIDER=anthropic make eval && make report")
+    else:
+        print(f"  Métricas medidas con: {medicion.get('provider')} · {medicion.get('model')}")
+
+    transcripciones = settings.data_dir / "transcripts.json"
+    if transcripciones.exists():
+        proveedor_conv = json.loads(transcripciones.read_text(encoding="utf-8")).get("proveedor")
+        if proveedor_conv != medicion.get("provider"):
+            print(
+                f"  ⚠ Las conversaciones se capturaron con '{proveedor_conv}' y las métricas "
+                f"con '{medicion.get('provider')}': el reporte mezcla dos corridas."
+            )
     return 0
 
 

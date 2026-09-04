@@ -326,3 +326,56 @@ def test_las_trazas_reales_no_llevan_identificadores(entorno):
     assert elena.rfc not in volcado
     assert elena.curp not in volcado
     assert "[RFC]" in volcado
+
+
+# ---------------------------------------------------------------------------
+# Permisos de los archivos con datos de asegurados
+# ---------------------------------------------------------------------------
+
+
+def test_la_base_nace_sin_permisos_para_otros_usuarios(tmp_path):
+    """`make seed` recrea la base: ajustar los permisos a mano no basta.
+
+    El umask habitual crea archivos `644`, legibles por cualquier usuario de la
+    máquina. La base contiene RFC, CURP y el historial de siniestros.
+    """
+    import stat
+
+    repositorio = Repository(tmp_path / "nueva.db")
+    repositorio.initialize()
+    modo = stat.S_IMODE((tmp_path / "nueva.db").stat().st_mode)
+    assert modo & (stat.S_IRGRP | stat.S_IROTH) == 0, f"la base nació con {oct(modo)}"
+
+
+def test_las_trazas_nacen_sin_permisos_para_otros_usuarios(tmp_path):
+    import stat
+
+    from insuragent.observability import TraceWriter
+
+    destino = tmp_path / "traces.jsonl"
+    TraceWriter(destino)
+    modo = stat.S_IMODE(destino.stat().st_mode)
+    assert modo & (stat.S_IRGRP | stat.S_IROTH) == 0
+
+
+def test_la_evidencia_nace_sin_permisos_para_otros_usuarios(entorno, png_bytes):
+    """Es la fotografía del vehículo de una persona concreta."""
+    import stat
+
+    from insuragent.agents.fnol_agent import FNOLAgent
+    from insuragent.llm.stub_provider import StubProvider
+
+    settings, _ = entorno
+    agente = FNOLAgent(StubProvider(), Repository(settings.db_path), settings.uploads_dir)
+    evidencia = agente.store_evidence("SIN-PERM", "dano.png", png_bytes, "image/png")
+
+    for ruta in (evidencia.stored_path, evidencia.stored_path.parent):
+        modo = stat.S_IMODE(ruta.stat().st_mode)
+        assert modo & (stat.S_IRGRP | stat.S_IROTH) == 0, f"{ruta.name} nació con {oct(modo)}"
+
+
+def test_restringir_no_revienta_en_rutas_inexistentes():
+    """En un contenedor de sólo lectura el servicio debe seguir funcionando."""
+    from insuragent.fs import restringir
+
+    restringir(Path("/ruta/que/no/existe/archivo.db"))

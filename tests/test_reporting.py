@@ -143,3 +143,60 @@ def test_genera_un_pdf_valido(tmp_path: Path, settings, evaluacion):
     assert contenido.startswith(b"%PDF-")
     assert contenido.rstrip().endswith(b"%%EOF")
     assert len(contenido) > 50_000  # con la portada y el diagrama vectorial
+
+
+# ---------------------------------------------------------------------------
+# Guardarraíl sobre la procedencia de las métricas
+# ---------------------------------------------------------------------------
+
+
+def _generar_reporte(settings, medicion: dict, capsys, transcripciones: dict | None = None) -> str:
+    """Genera el PDF y devuelve lo que el comando imprimió."""
+    from insuragent.cli import report
+
+    (settings.data_dir / "evaluation_report.json").write_text(
+        json.dumps(medicion), encoding="utf-8"
+    )
+    if transcripciones is not None:
+        (settings.data_dir / "transcripts.json").write_text(
+            json.dumps(transcripciones), encoding="utf-8"
+        )
+    report(["--output", str(settings.data_dir / "salida.pdf")])
+    return capsys.readouterr().out
+
+
+def test_el_comando_avisa_si_las_metricas_son_del_stub(settings, evaluacion, capsys, monkeypatch):
+    """Una corrida de comparación con el stub sobrescribe el artefacto de métricas.
+
+    Ocurrió: al comparar los backends de embeddings se regeneró el reporte con
+    cifras deterministas, y el PDF salió con «proveedor evaluado: stub» sin que
+    nadie lo advirtiera hasta leerlo.
+    """
+    from insuragent.config import get_settings
+
+    monkeypatch.setattr("insuragent.cli.get_settings", lambda: settings)
+    monkeypatch.setattr(get_settings, "cache_clear", lambda: None, raising=False)
+
+    salida = _generar_reporte(settings, {**evaluacion, "provider": "stub"}, capsys)
+    assert "ATENCIÓN" in salida
+    assert "no del modelo" in salida or "no es una medición" in salida or "línea base" in salida
+
+
+def test_el_comando_confirma_el_modelo_cuando_la_medicion_es_real(
+    settings, evaluacion, capsys, monkeypatch
+):
+    monkeypatch.setattr("insuragent.cli.get_settings", lambda: settings)
+    salida = _generar_reporte(settings, evaluacion, capsys)
+    assert "claude-opus-5" in salida
+    assert "ATENCIÓN" not in salida
+
+
+def test_el_comando_detecta_que_el_reporte_mezcla_dos_corridas(
+    settings, evaluacion, capsys, monkeypatch
+):
+    """Métricas de un proveedor y conversaciones de otro es un reporte incoherente."""
+    monkeypatch.setattr("insuragent.cli.get_settings", lambda: settings)
+    salida = _generar_reporte(
+        settings, evaluacion, capsys, transcripciones={"proveedor": "stub", "conversaciones": []}
+    )
+    assert "mezcla dos corridas" in salida

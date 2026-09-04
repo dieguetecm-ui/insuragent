@@ -17,6 +17,7 @@ from pathlib import Path
 from insuragent.agents.prompts import FNOL_EXTRACTION_SYSTEM, FNOL_SYSTEM
 from insuragent.agents.tools import INCIDENT_TO_COVERAGE, quote_deductible
 from insuragent.db.repository import Repository
+from insuragent.fs import restringir
 from insuragent.llm import LLMError, LLMProvider, Usage
 from insuragent.llm.stub_provider import extract_incident as rule_based_extract
 from insuragent.schemas.auth import Customer
@@ -142,6 +143,9 @@ class FNOLAgent:
         safe_name = Path(filename).name or "evidencia"
         stored_path = target_dir / f"{datetime.now():%Y%m%d%H%M%S}_{safe_name}"
         stored_path.write_bytes(content)
+        # La evidencia es una fotografía del vehículo de una persona concreta.
+        restringir(target_dir)
+        restringir(stored_path)
 
         return EvidenceFile(
             filename=safe_name,

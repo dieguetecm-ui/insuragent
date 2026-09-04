@@ -14,6 +14,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 from insuragent.config import get_settings
+from insuragent.fs import restringir
 from insuragent.schemas.auth import Customer, LoginRequest, Vehicle
 from insuragent.schemas.fnol import ClaimReport, EvidenceFile
 
@@ -45,9 +46,12 @@ class Repository:
             conn.close()
 
     def initialize(self) -> None:
-        """Crea el esquema si no existe (idempotente)."""
+        """Crea el esquema si no existe (idempotente) y restringe los permisos."""
         with self.connect() as conn:
             conn.executescript(SCHEMA_PATH.read_text(encoding="utf-8"))
+        # La base contiene RFC, CURP y siniestros: nunca legible por otros
+        # usuarios de la máquina. Se aplica aquí porque `make seed` la recrea.
+        restringir(self.db_path)
 
     def reset(self) -> None:
         """Borra la base y la vuelve a crear. Sólo para el seed y los tests."""
